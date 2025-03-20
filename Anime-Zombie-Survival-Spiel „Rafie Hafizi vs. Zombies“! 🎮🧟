@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rafie Hafizi vs. Zombies</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Rafie Hafizi vs. Zombies 🧟</h1>
+    <p>Steuerung: Pfeiltasten/WASD zum Bewegen, Leertaste zum Schießen</p>
+    <canvas id="gameCanvas"></canvas>
+    <script src="game.js"></script>
+</body>
+</html>
+body {
+    text-align: center;
+    background-color: black;
+    color: white;
+    font-family: Arial, sans-serif;
+}
+
+canvas {
+    border: 2px solid white;
+    background-color: darkgreen;
+}
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+canvas.width = 800;
+canvas.height = 500;
+
+let player = { x: 400, y: 250, size: 20, speed: 5 };
+let bullets = [];
+let zombies = [];
+let score = 0;
+
+document.addEventListener("keydown", movePlayer);
+document.addEventListener("keydown", shootBullet);
+
+function movePlayer(event) {
+    if (event.key === "ArrowUp" || event.key === "w") player.y -= player.speed;
+    if (event.key === "ArrowDown" || event.key === "s") player.y += player.speed;
+    if (event.key === "ArrowLeft" || event.key === "a") player.x -= player.speed;
+    if (event.key === "ArrowRight" || event.key === "d") player.x += player.speed;
+}
+
+function shootBullet(event) {
+    if (event.key === " ") {
+        bullets.push({ x: player.x + 10, y: player.y, size: 5, speed: 7 });
+    }
+}
+
+function spawnZombie() {
+    let side = Math.random() < 0.5 ? "left" : "right";
+    let zombie = { 
+        x: side === "left" ? 0 : canvas.width, 
+        y: Math.random() * canvas.height, 
+        size: 20, 
+        speed: 2 
+    };
+    zombies.push(zombie);
+}
+
+function updateGame() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Spieler zeichnen
+    ctx.fillStyle = "blue";
+    ctx.fillRect(player.x, player.y, player.size, player.size);
+
+    // Kugeln zeichnen & bewegen
+    ctx.fillStyle = "yellow";
+    bullets.forEach((bullet, index) => {
+        bullet.x += bullet.speed;
+        ctx.fillRect(bullet.x, bullet.y, bullet.size, bullet.size);
+        if (bullet.x > canvas.width) bullets.splice(index, 1);
+    });
+
+    // Zombies zeichnen & bewegen
+    ctx.fillStyle = "red";
+    zombies.forEach((zombie, zIndex) => {
+        zombie.x += zombie.speed * (zombie.x < player.x ? 1 : -1);
+        zombie.y += zombie.speed * (zombie.y < player.y ? 1 : -1);
+        ctx.fillRect(zombie.x, zombie.y, zombie.size, zombie.size);
+
+        // Game Over, wenn Zombie den Spieler trifft
+        if (Math.abs(zombie.x - player.x) < 20 && Math.abs(zombie.y - player.y) < 20) {
+            alert("Game Over! Dein Score: " + score);
+            document.location.reload();
+        }
+
+        // Kugeln treffen Zombies
+        bullets.forEach((bullet, bIndex) => {
+            if (Math.abs(bullet.x - zombie.x) < 20 && Math.abs(bullet.y - zombie.y) < 20) {
+                score++;
+                zombies.splice(zIndex, 1);
+                bullets.splice(bIndex, 1);
+            }
+        });
+    });
+
+    // Score anzeigen
+    ctx.fillStyle = "white";
+    ctx.fillText("Score: " + score, 10, 20);
+
+    requestAnimationFrame(updateGame);
+}
+
+setInterval(spawnZombie, 2000);
+updateGame();
